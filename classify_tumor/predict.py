@@ -1,19 +1,20 @@
 from pathlib import Path
-from typing import Dict
-
 import torch
-import logging
+from functools import lru_cache
+import torchvision
 from torchvision import transforms
 from PIL import Image
+import os
+import logging
 
+from classify_tumor.schema import PredictionResponse
 
-from classify_tumor.model import build_model
-import importlib.resources as resources
+logger = logging.getLogger(__name__)
 
 # Classes in the same order as in the ImageFolder used during model training
 CLASS_NAMES = ["benign", "malignant"]
 
-logger = logging.getLogger(__name__)
+MODEL_PATH = Path(os.getenv("MODEL_PATH", "resnet_skin.pth"))
 
 def _get_device() -> torch.device:
     """Returns the device to use (MPS if available, otherwise CPU)."""
@@ -21,22 +22,24 @@ def _get_device() -> torch.device:
         return torch.device("mps")
     return torch.device("cpu")
 
-def _load_model(device: torch.device) -> torch.nn.Module:
-    model = build_model(num_classes=2)
-    model.eval()
-    model.to(device)
-
-    model_path = (
-        resources.files("classify_tumor.resources")
-        .joinpath("resnet_skin.pth")
+@lru_cache
+def _load_model() -> torch.nn.Module:
+    """
+    Load the pretrained model
+    """
+    model = torchvision.models.resnet18(
+        weights=torchvision.models.ResNet18_Weights.DEFAULT
     )
+    device = _get_device()
+    model.fc = torch.nn.Linear(512, 2)
+    model.eval()
+    model.to(device = device)
 
-    logger.debug("Loading model from %s", model_path)
-
-    with model_path.open("rb") as f:
-        state_dict = torch.load(f, map_location=device)
+    with MODEL_PATH.open("rb") as f:
+        state_dict = torch.load(f, map_location = device)
 
     model.load_state_dict(state_dict)
+    logger.debug("Model loaded successfully")
     return model
 
 def _build_transforms() -> transforms.Compose:
@@ -46,31 +49,28 @@ def _build_transforms() -> transforms.Compose:
         transforms.ToTensor()
     ])
 
-def predict(image_path: Path) -> Dict[str, float | str]:
+def predict(image_input: Image) -> PredictionResponse:
     """
     Performs inference on a tumor image.
-    Assumes the path has already been validated; exceptions handled upstream.
+    Accepts Path, bytes, or file path string.
     """
-
-    # Opens image
-    image = Image.open(image_path).convert("RGB")
-
-    # Transforms
+    
     transform = _build_transforms()
-    tensor = transform(image).unsqueeze(0)  # add batch dimension
+    tensor = transform(image_input).unsqueeze(0)
     device = _get_device()
     tensor = tensor.to(device)
-
-    # Loads model
-    model = _load_model(device)
-
-    # Infers
+    
+    model = _load_model()
+    
     with torch.no_grad():
         outputs = model(tensor)
         probs = torch.softmax(outputs, dim=1)[0]
         confidence, pred_idx = torch.max(probs, dim=0)
-
-    return {
-        "label": CLASS_NAMES[pred_idx.item()],
-        "confidence": confidence.item(),
-    }
+    
+    predicted_class = CLASS_NAMES[pred_idx.item()]
+    response = PredictionResponse(
+        predicted_class=predicted_class, 
+        confidence=round(confidence.item(), 2)
+    )
+    
+    return response

@@ -1,6 +1,15 @@
 from pathlib import Path
 import pytest
 from PIL import Image
+import torch
+from unittest.mock import MagicMock
+from fastapi.testclient import TestClient
+
+from classify_tumor.main import app
+
+@pytest.fixture
+def client():
+    return TestClient(app)
 
 @pytest.fixture
 def fake_image(tmp_path: Path) -> Path:
@@ -20,3 +29,10 @@ def fake_non_image(tmp_path: Path) -> Path:
     file_path = tmp_path / "dummy.txt"
     file_path.write_text("this is not an image")
     return file_path
+
+@pytest.fixture
+def fake_model():
+    fake_output = torch.tensor([[0.1, 0.9]])
+
+    model = MagicMock(return_value=fake_output)
+    return model
