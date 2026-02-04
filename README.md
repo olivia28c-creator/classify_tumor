@@ -1,6 +1,7 @@
 # classify_tumor
 
 Python package to classify skin tumor images as benign or malignant using a pre-trained ResNet18 model. Includes a CLI, logging, path validation, and tests.
+> Note: This is the principal branch (main) and contains the CLI version of the application. An ASGI version of the application is available in the fast-api branch of this repository, go to branches -> fast-api or follow the link: [https://github.com/olivia28c-creator/classify_tumor/tree/fast-api](https://github.com/olivia28c-creator/classify_tumor/tree/fast-api)
 
 ---
 
