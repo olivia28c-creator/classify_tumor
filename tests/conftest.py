@@ -5,7 +5,7 @@ import torch
 from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
 
-from classify_tumor.main import app
+from app.main import app
 
 @pytest.fixture
 def client():

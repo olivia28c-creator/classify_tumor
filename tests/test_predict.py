@@ -2,7 +2,7 @@ from PIL import Image
 from unittest.mock import patch
 import torch
 
-from classify_tumor.predict import predict, CLASS_NAMES
+from app.predict import predict, CLASS_NAMES
 
 
 def test_predict_success(fake_image, fake_model):

@@ -6,8 +6,8 @@ from PIL import Image, UnidentifiedImageError
 import io
 import logging
 
-from classify_tumor.predict import predict
-from classify_tumor.schema import PredictionResponse
+from app.predict import predict
+from app.schema import PredictionResponse
 
 logger = logging.getLogger(__name__)
 

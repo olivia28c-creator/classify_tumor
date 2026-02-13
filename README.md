@@ -1,12 +1,13 @@
-# Tumor Classification API (FastAPI + PyTorch)
+# Tumor Classification API
 
 This version of the project provides an API to classify image of skin tumors (benign/malignant).
 It includes endpoints to upload images, obtain the HTML form and unit testing with pytest.
 - ⁠API built with *FastAPI*.
-- Standard preprocessing with *torchvision.transforms*.
 - Structured logging with console outpout.
 - Exception handling with `HTTPExceptions` from *FastAPI/Starlette*.
 - Unit tests with *pytest*.
+
+For instructions on running the app with Docker, see [README.Docker.md](README.Docker.md)
 
 ## Model context
 
@@ -21,7 +22,6 @@ The model was trained in a prior phase using **Transfer Learning**:
 - Achieved ~82% accuracy on both training and test sets.
 
 > Note: **Training code is not included** in this repository. Only the final weights (resnet_skin.pth) are included in the root directory for loading, with @lru_cache to avoid loading it for every client call.
-
 
 ---
 
@@ -41,13 +41,17 @@ Using git:
 ```bash
 git clone https://github.com/olivia28c-creator/classify_tumor
 ````
-The repository will then be cloned into the current working directory. Then, go to the root of the `classify_tumor` repository and head to the branch _fast-api_:
+The repository will then be cloned into the current working directory. Then, navigate to the root of the `classify_tumor` repository:
+
+```bash
+cd classify_tumor
+```
+
+Head to the branch _fast-api_:
 
 ```bash
 git switch -q fast-api
 ```
-
-If you do not use git, download the repository manually from the current branch (_fast-api_).
 
 From the root of the `classify_tumor` repository, install basic dependencies:
 

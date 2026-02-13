@@ -7,7 +7,7 @@ from PIL import Image
 import os
 import logging
 
-from classify_tumor.schema import PredictionResponse
+from app.schema import PredictionResponse
 
 logger = logging.getLogger(__name__)
 

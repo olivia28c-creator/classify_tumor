@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 import logging
 
-from classify_tumor.router_predict import router
+from app.router_predict import router
 
 logger = logging.getLogger(__name__)
 
