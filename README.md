@@ -3,6 +3,8 @@
 This version of the project provides an API to classify image of skin tumors (benign/malignant).
 It includes endpoints to upload images, obtain the HTML form and unit testing with pytest.
 - ⁠API built with *FastAPI*.
+- *Python* API backend.
+- *React* frontend created with *Lovable* and integrated with backend.
 - Structured logging with console outpout.
 - Exception handling with `HTTPExceptions` from *FastAPI/Starlette*.
 - Unit tests with *pytest*.
@@ -11,7 +13,7 @@ For instructions on running the app with Docker, see [README.Docker.md](README.D
 
 ## Model context
 
-The model was trained in a prior phase using **Transfer Learning**:
+The model is a PyTorch model trained in a prior phase using **Transfer Learning**:
 
 - **ResNet18 pre-trained** on ImageNet was used.
 - The convolutional layers were frozen to leverage general image pattern recognition.
@@ -25,16 +27,9 @@ The model was trained in a prior phase using **Transfer Learning**:
 
 ---
 
-## Installation and setup
+## Clone repository
 
-It is recommended to use a virtual environment:
-
-```bash
-python -m venv venv
-source venv/bin/activate    # macOS/Linux
-venv\Scripts\activate       # Windows
-```
-Download or clone the repository and its basic dependencies.
+Clone the repository and its basic dependencies.
 
 Using git:
 
@@ -52,60 +47,104 @@ Head to the branch _fast-api_:
 ```bash
 git switch -q fast-api
 ```
-
-From the root of the `classify_tumor` repository, install basic dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-Key dependencies:
-- ⁠fastapi
-- ⁠uvicorn
-- ⁠torch
-- torchvision
-⁠- pillow
-- ⁠pytest
-- ⁠python-multipart
+You are all set for installing the dependencies and running the application.
 
 ---
 
-## Run the server
+## Install dependencies and run app
 
-From the root directory:
+It is necessary to set the frontend and the backend up separately in two different terminals.
+
+### 1) Frontend
+From the project root `classify_tumor`, navigate into the frontend folder:
+```bash
+cd frontend
+````
+Install dependencies:
+```bash
+npm ci
+```
+Start the dev server:
+```bash
+npm run dev
+```
+
+### 2) Backend
+
+Open a new terminal and navigate into the `classify_tumor` repository.
+Previously to installing any dependencies, it is strongly recommended to use a virtual environment:
 
 ```bash
-uvicorn classify_tumor.main:app --reload
+python -m venv venv
+source venv/bin/activate    # macOS/Linux
+venv\Scripts\activate       # Windows
+```
+Install dependencies:
+
+```bash
+pip install -r requirements/all.txt
+```
+For optional development dependencies such as mypy and pytest:
+
+```bash
+pip install -r requirements/dev.txt
+```
+Key dependencies:
+- ML: torch and torchvision
+- API: fastapi, uvicorn and starlette
+
+Run the app:
+
+```bash
+uvicorn app.main:app --reload
 ```
 Or rather:
 
 ```bash
-fastapi run classify_tumor/main.py
+fastapi run app/main.py
 ```
 For development mode, use:
 ```bash
-fastapi dev classify_tumor/main.py
+fastapi dev app/main.py
 ```
 
-The app will be served by default in the localhost IP address (127.0.0.1), port 8000:
+>Note: check the frontend terminal to see the IP direction where the app will be served. In most cases, it will be [http://localhost:8080/](http://localhost:8080/)
 
-[http://localhost:8000](http://localhost:8000)
+---
+## Web UI
 
+The application exposes a full web interface with the frontend integrated and served by the backend.
+
+
+
+### Pages
+
+1) Home page - [http://localhost:8080/](http://localhost:8080/)
+    - What you should see: a landing page with the app title, a short description, and a **Try Prediction** button.
+    ![Screenshot](example_images/Landing-page.png)
+
+2) Predict page - [http://localhost:8080/predict/](http://localhost:8080/predict/)
+    - What you should see: an image upload form (drag & drop or file picker) and a **Upload & Classify** button.
+    - Returns: the tumor classification prediction along with the model's confidence (percentage).
+    ![Screenshot](example_images/Predict-page.png)
 
 ---
 
-## Endpoints
+## API Endpoints
 
-### *GET /*
+Uvicorn will serve the FastAPI app by default at [http://localhost:8000/](http://localhost:8000/)
+
+### *GET /api/health*
 Returns welcome message.
-[http://localhost:8000/](http://localhost:8000/)
+[http://localhost:8000/api/health/](http://localhost:8000/api/health/)
 
-### *GET /predict/*
+### *GET /api/predict/*
 Returns a basic HTML form to upload the file.
-[http://localhost:8000/predict](http://localhost:8000/predict)
+[http://localhost:8000/api/predict/](http://localhost:8000/api/predict/)
 
-### *POST /upload/*
+### *POST /api/upload/*
 Accepts an image file and returns the prediction.
-[http://localhost:8000/upload](http://localhost:8000/upload)
+[http://localhost:8000/api/upload/](http://localhost:8000/api/upload/)
 > Note: This is a POST path operation. Opening it directly in the browser will show an error (405) because only GET requests can be accessed via URL, and this operation does not define a GET method.
 
 **Response example:**
@@ -121,22 +160,9 @@ Accepts an image file and returns the prediction.
 - File is not a valid image → 400 (Bad request)
 - Any other exception → 500 (Internal server error)
 
----
-
----
-
-## Use example via curl
-
-
-```bash
-curl -X POST "http://localhost:8000/upload/" -F "file=@foto.jpg"
-```
-
 You can check all the API functionalities and complete documentation at:
 
-[http://localhost:8000/docs](http://localhost:8000/docs)
-
-
+[http://localhost:8000/api/docs/](http://localhost:8000/api/docs/)
 
 ---
 

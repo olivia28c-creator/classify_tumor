@@ -1,18 +1,15 @@
-# Byte-compiled / optimized / DLL files
+
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyc
+*.pyo
+*.pyd
+*.pytest_cache
 
 # C extensions
 *.so
-
-# Git
-.git
-.gitignore
-__pycache__/
-*.pyc
-.env
-.DS_Store
 
 # Distribution / packaging
 .Python
@@ -47,7 +44,6 @@ coverage.xml
 *.cover
 *.py,cover
 .hypothesis/
-.pytest_cache/
 cover/
 
 # PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
@@ -62,3 +58,13 @@ ENV/
 env.bak/
 venv.bak/
 
+# Frontend build artifacts
+frontend/node_modules
+frontend/dist
+frontend/build
+
+# Miscellaneous
+.git
+.gitignore
+.DS_Store
+example_images/

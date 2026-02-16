@@ -1,0 +1,5 @@
+-r base.txt
+
+# Paquetes ML pesados (añadidos encima de base)
+torch==2.10.0
+torchvision==0.25.0
