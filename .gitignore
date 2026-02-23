@@ -1,14 +1,14 @@
 __pycache__/
 .pytest_cache/
-dist/
 *.pyc
 *.pyo
 *.pytest_cache/
 *.egg-info/
-dist/
-resources/*.pth
 venv/
 .venv/
 .env
 build/
 .vscode
+frontend/node_modules/
+frontend/dist/
+data/

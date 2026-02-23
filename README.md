@@ -7,6 +7,7 @@ It includes endpoints to upload images, obtain the HTML form and unit testing wi
 - *React* frontend created with *Lovable* and integrated with backend.
 - Structured logging with console outpout.
 - Exception handling with `HTTPExceptions` from *FastAPI/Starlette*.
+- **Persistence** of predictions using SQLite database
 - Unit tests with *pytest*.
 
 For instructions on running the app with Docker, see [README.Docker.md](README.Docker.md)
@@ -68,6 +69,8 @@ Start the dev server:
 ```bash
 npm run dev
 ```
+The frontend should now be running. Check the terminal to see the IP direction where the app will be served. In most cases, it will be [http://localhost:8080/](http://localhost:8080/)
+Now, let's set the backend server up.
 
 ### 2) Backend
 
@@ -75,7 +78,7 @@ Open a new terminal and navigate into the `classify_tumor` repository.
 Previously to installing any dependencies, it is strongly recommended to use a virtual environment:
 
 ```bash
-python -m venv venv
+python3 -m venv venv
 source venv/bin/activate    # macOS/Linux
 venv\Scripts\activate       # Windows
 ```
@@ -107,14 +110,14 @@ For development mode, use:
 ```bash
 fastapi dev app/main.py
 ```
+Uvicorn will serve the FastAPI app by default at [http://localhost:8000/](http://localhost:8000/)
 
->Note: check the frontend terminal to see the IP direction where the app will be served. In most cases, it will be [http://localhost:8080/](http://localhost:8080/)
+> Note: The first run creates the SQLite database (predictions.db) automatically
 
 ---
 ## Web UI
 
 The application exposes a full web interface with the frontend integrated and served by the backend.
-
 
 
 ### Pages
@@ -132,7 +135,6 @@ The application exposes a full web interface with the frontend integrated and se
 
 ## API Endpoints
 
-Uvicorn will serve the FastAPI app by default at [http://localhost:8000/](http://localhost:8000/)
 
 ### *GET /api/health*
 Returns welcome message.
@@ -154,6 +156,10 @@ Accepts an image file and returns the prediction.
 "confidence": 0.87
 }
 
+### *GET /api/predictions/*
+ List of all previous predictions (database persisted).
+[http://localhost:8000/api/predictions/](http://localhost:8000/api/predictions/)
+
 **Exceptions handled:**
 
 - No file → 400 (Bad request)
@@ -174,5 +180,9 @@ To run the tests, from root directory:
 pytest
 ```
 
+---
 
+## Notes on persistence
 
+- Using **SQLite**: the database file `predictions.db` is created automatically in the project root, at `data/predictions.db`
+- Data persists between runs **if you use the same local database**
