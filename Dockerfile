@@ -1,18 +1,18 @@
-# --- Etapa 1: Construir frontend ---
+# Stage 1: Build frontend
 FROM node:20-alpine AS frontend
 
 WORKDIR /frontend
 
-# Copiar solo package.json y package-lock.json para cachear npm install
-COPY frontend/package*.json .
+# Copy only package.json and package-lock.json to cache npm install
+COPY frontend/package*.json ./
 RUN npm ci
 
-# Copiar el resto del frontend y generar build
-COPY frontend/ .
+# Copy frontend and build
+COPY frontend/ ./
 RUN npm run build
-# Con vite se genera carpeta dist, con CRA carpeta build
+# With vite: dist, with CRA: build
 
-# --- Etapa final: Backend + frontend estático ---
+# Final stage: Backend + static frontend
 FROM python:3.11.7-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -21,30 +21,27 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Instalar dependencias de sistema necesarias
+# Install necessary system dependencies
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
-# Copiar requirements y instalar dependencias de Python
+# Copy requirements and install dependencies of Python
 COPY requirements/base.txt requirements/
 RUN pip install --no-cache-dir --upgrade pip --prefer-binary \
     && pip install --no-cache-dir -r requirements/base.txt
 
-# Instalar PyTorch CPU only (ligero y portable en amd64/arm64)
+# Install PyTorch CPU only (light and portable in amd64/arm64)
 RUN pip install --no-cache-dir --prefer-binary \
     --index-url https://download.pytorch.org/whl/cpu \
     torch==2.10.0 torchvision==0.25.0
 
-# Copiar backend
+# Copy backend
 COPY app ./app
 
-# Copiar archivos root necesarios
-COPY resnet_skin.pth ./resnet_skin.pth
-
-# Copiar build del frontend generado en la etapa anterior
+# Copy build from the frontend generated in the previous stage
 COPY --from=frontend /frontend/dist ./frontend/dist
 
-# Exponer puerto
-EXPOSE 8000
+# Expose port
+EXPOSE 8080
 
-# Comando para correr FastAPI
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Command to run FastAPI
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]

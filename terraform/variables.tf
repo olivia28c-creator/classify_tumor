@@ -1,0 +1,9 @@
+variable "project_id" { description = "ID of the project in GCP" }
+variable "region"     { default = "europe-west1" }
+variable "repository_name" { description = "Name of repository in GCP" }
+variable "db_password" { description = "Password for Postgres" }
+variable "bucket_name" { description = "Bucket name, globally unique" }
+variable "github_repo_owner" { description = "Github Username" }
+variable "github_repo_name" { description = "Name of the repository" }
+variable "file_name" { description = "Name of the file" }
+variable "branch_name" {default = "^main$"}

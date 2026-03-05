@@ -2,20 +2,14 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 import os
 
-# Ruta de la base de datos
-DB_FILE = "./data/predictions.db"
+# Si hay DATABASE_URL (en la nube), la usa. Si no, usa SQLite (local)
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./test.db")
 
-# Crear la carpeta 'data' si no existe
-db_dir = os.path.dirname(DB_FILE)
-if db_dir and not os.path.exists(db_dir):
-    os.makedirs(db_dir, exist_ok=True)
+# PostgreSQL en la nube requiere una pequeña corrección en la URL usando el driver de SQLAlchemy
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-DATABASE_URL = f"sqlite:///{DB_FILE}"
-
-engine = create_engine(
-    DATABASE_URL,
-    connect_args={"check_same_thread": False}
-)
+engine = create_engine(DATABASE_URL)
 
 SessionLocal = sessionmaker(
     autocommit=False,

@@ -12,3 +12,17 @@ build/
 frontend/node_modules/
 frontend/dist/
 data/
+resnet_skin.pth
+
+# Ignore hidden files of Terraform in any location
+**/.terraform/
+.terraform.lock.hcl
+
+# Ignore state files (Security)
+*.tfstate
+*.tfstate.backup
+
+# Ignorar everything inside terraform except main.tf and variables.tf
+terraform/*
+!terraform/main.tf
+!terraform/variables.tf

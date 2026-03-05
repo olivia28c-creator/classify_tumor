@@ -25,9 +25,9 @@ async def read_root():
     logger.info("Root endpoint accessed")
     return {"message": "Welcome to the Tumor Classification API"}
 
-if os.path.isdir("frontend/dist"): # En producción
+if os.path.isdir("frontend/dist"): # Web monolith: static mounting 
     app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="frontend")
-else: # Desarrollo
+else: # Multi service
     from fastapi.middleware.cors import CORSMiddleware
     app.add_middleware(
         CORSMiddleware,

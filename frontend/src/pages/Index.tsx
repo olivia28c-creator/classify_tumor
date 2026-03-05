@@ -68,8 +68,8 @@ const Index = () => {
         </p>
 
         <p>
-          Simply upload a skin lesion image and the application will return the predicted 
-          class along with a confidence score.
+          Simply upload a skin tumor image and the application will return the predicted 
+          class along with a confidence percentage.
         </p>
         </div>
 
@@ -78,7 +78,7 @@ const Index = () => {
           className="mt-10 gap-2"
           onClick={() => navigate("/predict")}
         >
-          Try Prediction
+          Try prediction
           <ArrowRight className="h-4 w-4" />
         </Button>
       </section>

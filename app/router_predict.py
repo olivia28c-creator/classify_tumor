@@ -40,14 +40,12 @@ async def classify(file: Annotated[
     logger.info(f"Processing file: {file.filename}")
 
     try:
-        # LEER el archivo ANTES de pasar a predict (con AWAIT)
+
         contents = await file.read()
         image = Image.open(io.BytesIO(contents))
         
-        # Llamar a predict pasando los bytes
         prediction = predict(image)  # ← Cambiar predict para aceptar bytes
         
-        # Persistir datos
         db_prediction = Prediction(
         filename=file.filename,
         predicted_class=prediction.predicted_class,

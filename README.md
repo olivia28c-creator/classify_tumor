@@ -1,188 +1,110 @@
-# Tumor Classification API
+# Tumor Classification API - Cloud Edition (GCP)
 
-This version of the project provides an API to classify image of skin tumors (benign/malignant).
-It includes endpoints to upload images, obtain the HTML form and unit testing with pytest.
-- ⁠API built with *FastAPI*.
-- *Python* API backend.
-- *React* frontend created with *Lovable* and integrated with backend.
-- Structured logging with console outpout.
-- Exception handling with `HTTPExceptions` from *FastAPI/Starlette*.
-- **Persistence** of predictions using SQLite database
-- Unit tests with *pytest*.
+**Live Demo:** [https://classify-tumor-103742887581.europe-west1.run.app/](https://classify-tumor-103742887581.europe-west1.run.app/)
 
-For instructions on running the app with Docker, see [README.Docker.md](README.Docker.md)
-
-## Model context
-
-The model is a PyTorch model trained in a prior phase using **Transfer Learning**:
-
-- **ResNet18 pre-trained** on ImageNet was used.
-- The convolutional layers were frozen to leverage general image pattern recognition.
-- The final linear layer was replaced to output **binary classification**: benign vs malignant tumor.
-- The dataset used was from Kaggle: `fanconic/skin-cancer-malignant-vs-benign`.
-- Data augmentation was applied to the training set (resize, random crop, horizontal flips) and basic normalization for the test set.
-- Optimization with `Adadelta` and `CrossEntropyLoss`.
-- Achieved ~82% accuracy on both training and test sets.
-
-> Note: **Training code is not included** in this repository. Only the final weights (resnet_skin.pth) are included in the root directory for loading, with @lru_cache to avoid loading it for every client call.
+This branch contains the **infrastructure-as-code (IaC)** and **CI/CD configurations** required to deploy the Tumor Classification API automatically to Google Cloud Platform.
 
 ---
 
-## Clone repository
+## Cloud Architecture
 
-Clone the repository and its basic dependencies.
-
-Using git:
-
-```bash
-git clone https://github.com/olivia28c-creator/classify_tumor
-````
-The repository will then be cloned into the current working directory. Then, navigate to the root of the `classify_tumor` repository:
-
-```bash
-cd classify_tumor
-```
-
-Head to the branch _fast-api_:
-
-```bash
-git switch -q fast-api
-```
-You are all set for installing the dependencies and running the application.
+The deployment follows a modern serverless architecture:
+* **Frontend & Backend:** Integrated into a single Docker container (Multi-stage build) and hosted on **Cloud Run**.
+* **Infrastructure:** Managed via **Terraform** (Bucket, Secret Manager, Cloud Build Triggers).
+* **CI/CD:** **Cloud Build** automatically triggers on every push to the `cloud` branch, building the image and deploying it.
+* **Database:** Connected to **Cloud SQL (PostgreSQL)** for production-grade persistence.
+* **Secrets:** Managed via **Secret Manager** (DB passwords).
 
 ---
 
-## Install dependencies and run app
+## Prerequisites
 
-It is necessary to set the frontend and the backend up separately in two different terminals.
+Before deploying, ensure you have:
+1. A **Google Cloud Project** with billing enabled.
+2. The **gcloud CLI** installed and authenticated (`gcloud auth application-default login`).
+3. **Terraform** installed (v1.0+).
+4. A **GitHub repository** connected to your GCP project (via the Cloud Build "Manage Connections" page).
 
-### 1) Frontend
-From the project root `classify_tumor`, navigate into the frontend folder:
+### Enable Google Cloud APIs
+Before running Terraform, you must authenticate and enable the necessary services in your project:
+
 ```bash
-cd frontend
-````
-Install dependencies:
-```bash
-npm ci
+# Login to Google Cloud
+gcloud auth login
+gcloud auth application-default login
+
+# Enable required APIs
+gcloud services enable \
+    cloudbuild.googleapis.com \
+    run.googleapis.com \
+    sqladmin.googleapis.com \
+    secretmanager.googleapis.com \
+    artifactregistry.googleapis.com
 ```
-Start the dev server:
-```bash
-npm run dev
-```
-The frontend should now be running. Check the terminal to see the IP direction where the app will be served. In most cases, it will be [http://localhost:8080/](http://localhost:8080/)
-Now, let's set the backend server up.
-
-### 2) Backend
-
-Open a new terminal and navigate into the `classify_tumor` repository.
-Previously to installing any dependencies, it is strongly recommended to use a virtual environment:
-
-```bash
-python3 -m venv venv
-source venv/bin/activate    # macOS/Linux
-venv\Scripts\activate       # Windows
-```
-Install dependencies:
-
-```bash
-pip install -r requirements/all.txt
-```
-For optional development dependencies such as mypy and pytest:
-
-```bash
-pip install -r requirements/dev.txt
-```
-Key dependencies:
-- ML: torch and torchvision
-- API: fastapi, uvicorn and starlette
-
-Run the app:
-
-```bash
-uvicorn app.main:app --reload
-```
-Or rather:
-
-```bash
-fastapi run app/main.py
-```
-For development mode, use:
-```bash
-fastapi dev app/main.py
-```
-Uvicorn will serve the FastAPI app by default at [http://localhost:8000/](http://localhost:8000/)
-
-> Note: The first run creates the SQLite database (predictions.db) automatically
-
----
-## Web UI
-
-The application exposes a full web interface with the frontend integrated and served by the backend.
-
-
-### Pages
-
-1) Home page - [http://localhost:8080/](http://localhost:8080/)
-    - What you should see: a landing page with the app title, a short description, and a **Try Prediction** button.
-    ![Screenshot](example_images/Landing-page.png)
-
-2) Predict page - [http://localhost:8080/predict/](http://localhost:8080/predict/)
-    - What you should see: an image upload form (drag & drop or file picker) and a **Upload & Classify** button.
-    - Returns: the tumor classification prediction along with the model's confidence (percentage).
-    ![Screenshot](example_images/Predict-page.png)
+### Manual GitHub Connection
+For security reasons, Google requires a manual OAuth connection for the first time:
+1. Go to **Cloud Build** > **Triggers** in your GCP Console.
+2. Click **"Manage Repositories"** > **"Connect Repository"**.
+3. Select **GitHub (Cloud Build GitHub App)**, authorize, and select this repository.
 
 ---
 
-## API Endpoints
+## Deployment Guide
 
+### 1. Initialize Infrastructure (Terraform)
+Navigate to the `terraform/` directory. Create a `terraform.tfvars` file (this file is git-ignored) and fill in your specific values:
 
-### *GET /api/health*
-Returns welcome message.
-[http://localhost:8000/api/health/](http://localhost:8000/api/health/)
-
-### *GET /api/predict/*
-Returns a basic HTML form to upload the file.
-[http://localhost:8000/api/predict/](http://localhost:8000/api/predict/)
-
-### *POST /api/upload/*
-Accepts an image file and returns the prediction.
-[http://localhost:8000/api/upload/](http://localhost:8000/api/upload/)
-> Note: This is a POST path operation. Opening it directly in the browser will show an error (405) because only GET requests can be accessed via URL, and this operation does not define a GET method.
-
-**Response example:**
-
-{
-"predicted_class": "benign",
-"confidence": 0.87
-}
-
-### *GET /api/predictions/*
- List of all previous predictions (database persisted).
-[http://localhost:8000/api/predictions/](http://localhost:8000/api/predictions/)
-
-**Exceptions handled:**
-
-- No file → 400 (Bad request)
-- File is not a valid image → 400 (Bad request)
-- Any other exception → 500 (Internal server error)
-
-You can check all the API functionalities and complete documentation at:
-
-[http://localhost:8000/api/docs/](http://localhost:8000/api/docs/)
-
----
-
-## Tests
-
-To run the tests, from root directory:
-
-```bash
-pytest
+```hcl
+project_id        = "your-project-id"
+region            = "europe-west1"
+repository_name   = "your-artifact-registry-repo"
+db_password       = "your-secure-password"
+bucket_name       = "your-unique-model-bucket"
+github_repo_owner = "your-github-username"
+github_repo_name  = "your-github-repo-name"
+file_name         = "your-model"
+branch_name       = "^cloud$"
 ```
 
+Then, run the following commands:
+
+```bash
+terraform init
+terraform apply
+```
+
+> **Note on Permissions:** The Terraform script automatically configures the **Compute Service Account** with the necessary IAM roles (`Secret Manager Accessor`, `Cloud Run Admin`, `Log Writer`, etc.) to ensure the deployment doesn't fail due to "Permission Denied" errors.
+
+### 2. The CI/CD Workflow
+Once Terraform creates the trigger, any change pushed to the specified branch (by default, the `main` branch) will:
+1. **Build** the Docker image using the `Dockerfile`.
+2. **Push** the image to **Google Artifact Registry**.
+3. **Deploy** a new revision to **Cloud Run**, automatically injecting secrets and environment variables.
+
+
+
+To trigger it manually the first time:
+
+```bash
+gcloud builds submit --config cloudbuild.yaml .
+```
+
+## 📝 Key Files in this Branch
+
+| File | Purpose |
+| :--- | :--- |
+| `terraform/main.tf` | Defines GCP resources (Bucket, Secrets, IAM, Triggers). |
+| `cloudbuild.yaml` | The CI/CD pipeline instructions (Build, Push, Deploy). |
+| `Dockerfile` | Multi-stage build (Node.js for React + Python for FastAPI). |
+
 ---
 
-## Notes on persistence
+## ⚠️ Troubleshooting
 
-- Using **SQLite**: the database file `predictions.db` is created automatically in the project root, at `data/predictions.db`
-- Data persists between runs **if you use the same local database**
+### Permission Propagation Delay
+When running Terraform for the first time, Google Cloud may take 1–2 minutes to propagate IAM permissions. This happens because Terraform might report the resource is "Created," but the IAM policy hasn't fully reached the Secret Manager service. If your first Cloud Build fails with a **403 Forbidden** error, wait a couple of minutes and **Retry** the build.
+
+### Logging
+To view logs during deployment or runtime:
+* **Deployment logs:** Check the [Cloud Build Console](https://console.cloud.google.com/cloud-build/).
+* **Application logs:** Check the [Cloud Run Logs](https://console.cloud.google.com/run/) (Filtered by `CLOUD_LOGGING_ONLY`).

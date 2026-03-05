@@ -68,3 +68,6 @@ frontend/build
 .gitignore
 .DS_Store
 example_images/
+
+# Model weights
+resnet_skin.pth

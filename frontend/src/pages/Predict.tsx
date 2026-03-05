@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Upload, ArrowLeft, ImageIcon, Loader2 } from "lucide-react";
 
-const API_BASE = "http://localhost:8000/api";
+const API_BASE = "/api";
 
 const Predict = () => {
   const navigate = useNavigate();

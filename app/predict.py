@@ -1,76 +1,71 @@
+import os
+import logging
 from pathlib import Path
-import torch
 from functools import lru_cache
+
+import torch
 import torchvision
 from torchvision import transforms
 from PIL import Image
-import os
-import logging
+from google.cloud import storage
 
 from app.schema import PredictionResponse
 
 logger = logging.getLogger(__name__)
 
-# Classes in the same order as in the ImageFolder used during model training
 CLASS_NAMES = ["benign", "malignant"]
 
-MODEL_PATH = Path(os.getenv("MODEL_PATH", "resnet_skin.pth"))
+# CONFIGURACIÓN CLOUD
+BUCKET_NAME = os.getenv("MODEL_BUCKET_NAME") # Bucket name in GCP
+MODEL_FILENAME = os.getenv("MODEL_FILENAME")
+LOCAL_MODEL_PATH = Path("/tmp") / MODEL_FILENAME # /tmp is the only writtable directory in Cloud Run
 
-def _get_device() -> torch.device:
-    """Returns the device to use (MPS if available, otherwise CPU)."""
-    if torch.backends.mps.is_available():
-        return torch.device("mps")
-    return torch.device("cpu")
+def download_model_from_gcs():
+    """Downloads the model from Google Cloud Storage if it doesn't exist in /tmp"""
+    if not LOCAL_MODEL_PATH.exists():
+        logger.info(f"Downloading model from gs://{BUCKET_NAME}/{MODEL_FILENAME}...")
+        client = storage.Client()
+        bucket = client.bucket(BUCKET_NAME)
+        blob = bucket.blob(MODEL_FILENAME)
+        blob.download_to_filename(LOCAL_MODEL_PATH)
+        logger.info("Download completed")
 
 @lru_cache
 def _load_model() -> torch.nn.Module:
-    """
-    Load the pretrained model
-    """
-    model = torchvision.models.resnet18(
-        weights=torchvision.models.ResNet18_Weights.DEFAULT
-    )
-    device = _get_device()
-    model.fc = torch.nn.Linear(512, 2)
+    # 1. Make sure model is available locally
+    if BUCKET_NAME:
+        download_model_from_gcs()
+    
+    # 2. Architecture
+    model = torchvision.models.resnet18(weights=None)
+    model.fc = torch.nn.Linear(512, len(CLASS_NAMES))
+    
+    # 3. Load weights
+    path = LOCAL_MODEL_PATH if LOCAL_MODEL_PATH.exists() else Path(MODEL_FILENAME)
+    
+    model.load_state_dict(torch.load(path, map_location=torch.device("cpu")))
     model.eval()
-    model.to(device = device)
-
-    with MODEL_PATH.open("rb") as f:
-        state_dict = torch.load(f, map_location = device)
-
-    model.load_state_dict(state_dict)
-    logger.debug("Model loaded successfully")
+    model.to(torch.device("cpu"))
+    logger.info("Modelo cargado en memoria.")
     return model
 
-def _build_transforms() -> transforms.Compose:
-    """Returns the transformations applied to the image before passing it to the model."""
-    return transforms.Compose([
-        transforms.Resize((224, 224)),
-        transforms.ToTensor()
-    ])
+IMAGE_TRANSFORMS = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor()
+])
 
-def predict(image_input: Image) -> PredictionResponse:
-    """
-    Performs inference on a tumor image.
-    Accepts Path, bytes, or file path string.
-    """
-    
-    transform = _build_transforms()
-    tensor = transform(image_input).unsqueeze(0)
-    device = _get_device()
-    tensor = tensor.to(device)
-    
+def predict(image_input: Image.Image) -> PredictionResponse:
+
     model = _load_model()
+    
+    tensor = IMAGE_TRANSFORMS(image_input).unsqueeze(0).to(torch.device("cpu"))
     
     with torch.no_grad():
         outputs = model(tensor)
         probs = torch.softmax(outputs, dim=1)[0]
         confidence, pred_idx = torch.max(probs, dim=0)
     
-    predicted_class = CLASS_NAMES[pred_idx.item()]
-    response = PredictionResponse(
-        predicted_class=predicted_class, 
-        confidence=round(confidence.item(), 2)
+    return PredictionResponse(
+        predicted_class=CLASS_NAMES[pred_idx.item()], 
+        confidence=round(float(confidence), 2)
     )
-    
-    return response
